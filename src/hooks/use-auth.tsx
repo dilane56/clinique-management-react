@@ -1,29 +1,31 @@
 "use client"
-import {createContext} from "node:vm";
-import {ReactNode, use, useContext, useEffect, useState} from "react";
+
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+
 
 interface  User{
     id: number,
     email: string,
     nom: string,
     prenom : string,
-    role:"ADMIN" | "MEDECIN" | "SECRETAIRE"|"PATIENT",
+    role:"ADMIN" | "MEDECIN" | "SECRETAIRE",
     telephone?:string,
     specialite?: string,
-    sexe?:"HOMME"| "FEMME",
-    addresse?: string,
+
 
 
 }
 
 interface AuthContextType {
-    user : User| null
-    login: ( email: string, password: string ) => Promise<User>
-    logout: () => void,
+    user: User | null
+    login: (email: string, password: string) => Promise<User>
+    logout: () => void
     isLoading: boolean
 }
 
-const  AuthContext = createContext<AuthContextType | undefined> (undefined)
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 
 export function  AUthProvider({ children }:{children: ReactNode}){
     const [user, setUser] = useState<User | null>(null)
@@ -45,7 +47,8 @@ export function  AUthProvider({ children }:{children: ReactNode}){
                 localStorage.removeItem("user_data")
             }
         }
-    })
+        setisLoading(false)
+    }, [])
 
     const apiUrl =""
 
@@ -64,17 +67,22 @@ export function  AUthProvider({ children }:{children: ReactNode}){
             if (!response.ok){
                 throw new Error("Echec de la connexion : identifiants invalides");
             }
+            const data = await response.json();
+            const {token, user} = data;
+
+            //Stocker le token et les donées utilisateur
+            localStorage.setItem("auth_token", token);
+            localStorage.setItem("user_data", JSON.stringify(user));
+            setUser(user)
+            console.log("connexion réussie:", user);
+            return user
+
+        } catch(error){
+            console.error("Erreur de connexion:", error)
+            throw  new Error("Echec de la connexion : "+ error)
         }
 
-        const data = await response.json();
-        const {token, user} = data;
 
-        //Stocker le token et les donées utilisateur
-        localStorage.setItem("auth_token", token);
-        localStorage.setItem("user_data", JSON.stringify(user));
-        setUser(user)
-        console.log("connexion réussie:", user);
-        return user
 
     }
     const logout = () => {
@@ -89,10 +97,10 @@ export function  AUthProvider({ children }:{children: ReactNode}){
 
 
 }
-export function useAuth(): AuthContextType {
+export function useAuth() {
     const context = useContext(AuthContext)
-    if(context === undefined){
-        throw new Error("useAuth doit être utilisé dans un AuthProvider")
+    if (context === undefined) {
+        throw new Error("useAuth must be used within an AuthProvider")
     }
     return context
 }
